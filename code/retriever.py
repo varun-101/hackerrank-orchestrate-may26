@@ -69,10 +69,30 @@ class Chunk:
 
 @dataclass
 class RetrievedChunk:
-    text:   str
-    source: str
-    domain: str
-    score:  float   # cross-encoder relevance score
+    text:         str
+    source:       str
+    domain:       str
+    score:        float   # cross-encoder relevance score
+    product_area: str = ""  # parent directory name of the source .md file
+
+
+# ---------------------------------------------------------------------------
+# Area extraction helper
+# ---------------------------------------------------------------------------
+def _area_from_source(source: str) -> str:
+    """
+    Extract the product_area from a corpus file path.
+
+    The product_area is the name of the directory immediately above the .md
+    file.  No normalisation is applied — the raw subdirectory name is used
+    as the canonical product area.
+
+    Examples:
+        'claude/claude/account-management/file.md'          -> 'account-management'
+        'hackerrank/screen/managing-tests/file.md'          -> 'managing-tests'
+        'visa/support/consumer/travel-support/file.md'      -> 'travel-support'
+    """
+    return Path(source).parent.name
 
 
 # ---------------------------------------------------------------------------
@@ -268,7 +288,13 @@ def _rerank(query: str, candidates: list[tuple[Chunk, float]], top_k: int) -> li
     ranked = sorted(zip(candidates, scores), key=lambda x: x[1], reverse=True)
 
     return [
-        RetrievedChunk(text=chunk.text, source=chunk.source, domain=chunk.domain, score=float(sc))
+        RetrievedChunk(
+            text=chunk.text,
+            source=chunk.source,
+            domain=chunk.domain,
+            score=float(sc),
+            product_area=_area_from_source(chunk.source),
+        )
         for (chunk, _), sc in ranked[:top_k]
     ]
 

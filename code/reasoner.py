@@ -203,7 +203,7 @@ _SCHEMA_BLOCK = """\
 Return ONLY a valid JSON object with exactly these five keys — no extra text:
 {
   "status"        : "replied" or "escalated",
-  "product_area"  : "<most relevant support category from the corpus, e.g. screen, billing, account-management, travel_support>",
+  "product_area"  : "<the subdirectory name that appears in the corpus excerpt source paths above, e.g. 'managing-tests' from 'hackerrank/screen/managing-tests/...', 'account-management' from 'claude/claude/account-management/...', 'travel-support' from 'visa/.../travel-support/...'>",
   "response"      : "<user-facing answer grounded in the corpus excerpts — never fabricate facts>",
   "justification" : "<1-2 sentences explaining which corpus excerpt supports the response, or why it was escalated>",
   "request_type"  : "product_issue" or "feature_request" or "bug" or "invalid"
