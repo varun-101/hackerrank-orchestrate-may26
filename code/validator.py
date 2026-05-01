@@ -140,6 +140,7 @@ def _validate_schema(result, pre) -> tuple[object, list[str]]:
         response=response,
         justification=justification,
         request_type=request_type,
+        chunk_id=result.chunk_id,
     )
     return corrected, issues
 
@@ -184,6 +185,7 @@ def _validate_consistency(result) -> tuple[object, list[str]]:
         response=result.response,
         justification=justification,
         request_type=result.request_type,
+        chunk_id=result.chunk_id,
     )
     return corrected, issues
 
@@ -227,7 +229,7 @@ def _llm_hallucination_check(response: str, chunks) -> tuple[bool, list[str]]:
         return True, []   # skip if no key — don't block the pipeline
 
     corpus_block = "\n\n".join(
-        f"[Excerpt {i+1}]\n{c.text[:600]}" for i, c in enumerate(chunks[:5])
+        f"[Excerpt {i+1}]\n{c.text}" for i, c in enumerate(chunks[:5])
     )
     user_msg = (
         "RESPONSE:\n" + response + "\n\n"
@@ -286,6 +288,7 @@ def _validate_hallucination(result, chunks) -> tuple[object, list[str]]:
                 + "]"
             ),
             request_type=result.request_type,
+            chunk_id=result.chunk_id,
         )
         return escalated, issues
 

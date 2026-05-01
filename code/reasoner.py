@@ -52,6 +52,7 @@ class ReasonResult:
     response:      str
     justification: str
     request_type:  str   # "product_issue" | "feature_request" | "bug" | "invalid"
+    chunk_id:      int = 0  # 1-based index of the excerpt that grounded the response (0 = unknown)
 
 
 # ---------------------------------------------------------------------------
@@ -200,13 +201,14 @@ _DOMAIN_CTX: dict[str, str] = {
 # The output schema is written as a plain string (not an f-string) so that
 # the JSON braces are never misinterpreted by Python's str.format().
 _SCHEMA_BLOCK = """\
-Return ONLY a valid JSON object with exactly these five keys — no extra text:
+Return ONLY a valid JSON object with exactly these six keys — no extra text:
 {
   "status"        : "replied" or "escalated",
-  "product_area"  : "<the subdirectory name that appears in the corpus excerpt source paths above, e.g. 'managing-tests' from 'hackerrank/screen/managing-tests/...', 'account-management' from 'claude/claude/account-management/...', 'travel-support' from 'visa/.../travel-support/...'>",
+  "product_area"  : "<the subdirectory name from the source path of the excerpt you used most, e.g. 'managing-tests', 'account-management', 'travel-support'>",
   "response"      : "<user-facing answer grounded in the corpus excerpts — never fabricate facts>",
   "justification" : "<1-2 sentences explaining which corpus excerpt supports the response, or why it was escalated>",
-  "request_type"  : "product_issue" or "feature_request" or "bug" or "invalid"
+  "request_type"  : "product_issue" or "feature_request" or "bug" or "invalid",
+  "chunk_id"      : <integer 1-N: the Excerpt number whose content most directly informed your response; 0 if none>
 }"""
 
 _RULES = """\
@@ -275,6 +277,14 @@ def _coerce(raw: dict, pre) -> ReasonResult:
     response      = str(raw.get("response", _ESCALATION_MSG)).strip()      or _ESCALATION_MSG
     justification = str(raw.get("justification", "")).strip()
 
+    # Extract chunk_id — the LLM tells us which excerpt grounded its response
+    try:
+        chunk_id = int(raw.get("chunk_id", 0))
+        if chunk_id < 0:
+            chunk_id = 0
+    except (TypeError, ValueError):
+        chunk_id = 0
+
     # Consistency check: a response that says "contact support" should be escalated
     _contact_phrases = ("contact support", "reach out to", "contact us", "contact a specialist")
     if status == "replied" and any(p in response.lower() for p in _contact_phrases):
@@ -287,6 +297,7 @@ def _coerce(raw: dict, pre) -> ReasonResult:
         response=response,
         justification=justification,
         request_type=request_type,
+        chunk_id=chunk_id,
     )
 
 

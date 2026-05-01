@@ -198,7 +198,7 @@ def _run_pipeline(issue: str, subject: str, company: Optional[str]):
 
     # Override LLM-guessed product_area with the corpus-path-derived value.
     # The parent directory of the top-ranked .md file is the authoritative area.
-    res.product_area = resolve_product_area(chunks, res.product_area)
+    res.product_area = resolve_product_area(chunks, res.product_area, res.chunk_id)
 
     vr = validate(res, pre, chunks)
     return vr.result

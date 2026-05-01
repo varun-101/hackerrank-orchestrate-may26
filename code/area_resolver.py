@@ -24,25 +24,34 @@ CONFIDENCE_THRESHOLD: float = -4.0
 def resolve_product_area(
     chunks,           # list[RetrievedChunk], sorted best-first (highest score first)
     llm_fallback: str,
+    chunk_id: int = 0, # 1-based index from the LLM
 ) -> str:
     """
     Return the product_area for a ticket.
 
     Strategy:
-      1. Take the top-ranked chunk (highest cross-encoder score).
-      2. If its score >= CONFIDENCE_THRESHOLD and its product_area is non-empty,
-         use that area directly — it comes straight from the corpus path and is
-         always more reliable than the LLM's free-text guess.
+      1. If the LLM returned a valid chunk_id (1-N) that grounded its answer,
+         use that chunk's path-derived product_area.
+      2. If chunk_id is missing/invalid, take the top-ranked chunk. If its score
+         >= CONFIDENCE_THRESHOLD, use its product_area.
       3. Otherwise fall back to the LLM-generated value.
 
     Args:
         chunks:       Reranked list of RetrievedChunk (best first).
         llm_fallback: The product_area string produced by the LLM reasoner.
+        chunk_id:     The 1-based index of the excerpt the LLM cited.
 
     Returns:
         A non-empty product_area string.
     """
     if chunks:
+        # Strategy 1: Explicit LLM citation
+        if 1 <= chunk_id <= len(chunks):
+            cited_chunk = chunks[chunk_id - 1]
+            if cited_chunk.product_area:
+                return cited_chunk.product_area
+
+        # Strategy 2: Cross-encoder confidence
         top = chunks[0]
         if top.score >= CONFIDENCE_THRESHOLD and top.product_area:
             return top.product_area
