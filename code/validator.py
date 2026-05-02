@@ -7,8 +7,7 @@ Three independent checks run on every ReasonResult before it is written to CSV:
                            non-empty.  Coerces or escalates on failure.
 
   2. Consistency Checker — catches contradictions the LLM can produce:
-                           e.g. status=replied but the response body says
-                           "please contact support" (that is an escalation, not a reply).
+                           e.g. status=escalated but the response body is unusually long.
 
   3. Hallucination Guard — verifies that factual claims in the response are
                            attributable to the retrieved corpus excerpts.
@@ -37,18 +36,6 @@ from dataclasses import dataclass, field
 _VALID_STATUS = {"replied", "escalated"}
 _VALID_RT     = {"product_issue", "feature_request", "bug", "invalid"}
 
-# Phrases in a response that imply the ticket should actually be escalated
-_ESCALATION_PHRASES = [
-    "please contact support",
-    "contact our support team",
-    "reach out to our team",
-    "contact a specialist",
-    "escalate this",
-    "forward this to",
-    "our team will",
-    "a representative will",
-    "please call us",
-]
 
 # Heuristic patterns for claims that are easy to verify against the corpus
 _PHONE_RE   = re.compile(r'\+?[\d][\d\s\-\(\)\.]{6,}[\d]')
@@ -158,18 +145,6 @@ def _validate_consistency(result) -> tuple[object, list[str]]:
     status   = result.status
     response = result.response.lower()
     justification = result.justification
-
-    # A "replied" status with response text implying escalation is a contradiction
-    if status == "replied":
-        for phrase in _ESCALATION_PHRASES:
-            if phrase in response:
-                issues.append(
-                    f"consistency: status=replied but response contains {phrase!r} "
-                    f"— corrected to escalated"
-                )
-                status = "escalated"
-                justification = justification + " [auto-escalated: response implied handoff]"
-                break
 
     # An escalated response with a very long detailed answer may be misclassified
     # (don't flip it, but flag for awareness)

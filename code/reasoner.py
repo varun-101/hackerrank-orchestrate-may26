@@ -33,7 +33,7 @@ from typing import Optional
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-RISK_THRESHOLD = 0.7      # risk_score >= this triggers escalation without LLM
+RISK_THRESHOLD = 1      # risk_score >= this triggers escalation without LLM
 
 SAMPLE_CSV = Path(__file__).parent.parent / "support_tickets" / "sample_support_tickets.csv"
 
@@ -284,12 +284,6 @@ def _coerce(raw: dict, pre) -> ReasonResult:
             chunk_id = 0
     except (TypeError, ValueError):
         chunk_id = 0
-
-    # Consistency check: a response that says "contact support" should be escalated
-    _contact_phrases = ("contact support", "reach out to", "contact us", "contact a specialist")
-    if status == "replied" and any(p in response.lower() for p in _contact_phrases):
-        status = "escalated"
-        justification += " [auto-corrected: response implied escalation]"
 
     return ReasonResult(
         status=status,

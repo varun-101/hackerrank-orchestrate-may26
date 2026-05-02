@@ -54,7 +54,7 @@ RERANK_TOP_K   = 5     # final chunks returned after cross-encoder
 
 # Model names (downloaded on first use from HuggingFace)
 EMBED_MODEL    = "all-MiniLM-L6-v2"
-RERANK_MODEL   = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+RERANK_MODEL   = "BAAI/bge-reranker-base"
 
 # ---------------------------------------------------------------------------
 # Data classes
